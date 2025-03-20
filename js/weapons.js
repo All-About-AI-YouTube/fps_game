@@ -194,12 +194,21 @@ export function setupWeapons(scene, camera, collisionSystem) {
         const arrowPosition = arrow.mesh.position.clone();
         const lastPosition = arrow.lastPosition;
         
+        // Log every 30th arrow check to avoid flooding console
+        if (Math.random() < 0.03) {
+            console.log("Arrow collision check:", {
+                position: arrowPosition,
+                isEnemy: arrow.isEnemy,
+                age: Date.now() - arrow.createdAt
+            });
+        }
+        
         // Special check for player hit by enemy arrow
         if (arrow.isEnemy && healthSystem) {
             // Add a small delay to prevent hit detection right after joining
             // Only check if the arrow has been active for a little while
             const arrowAge = Date.now() - arrow.createdAt;
-            if (arrowAge < 500) { // 500ms grace period for new arrows
+            if (arrowAge < 200) { // 200ms grace period for new arrows - reduced from 500ms
                 return false;
             }
             
@@ -321,10 +330,15 @@ export function setupWeapons(scene, camera, collisionSystem) {
         
         // Special check for remote player hit by player arrow in multiplayer
         if (!arrow.isEnemy && networkSystem && networkSystem.isInGame()) {
+            // Debug logging to understand hit detection
+            console.log("Checking for remote player hits");
+            console.log("Arrow position:", arrowPosition);
+            console.log("Remote players:", Object.keys(networkSystem.remotePlayers).length);
+            
             // Add a small delay to prevent hit detection right after joining
             // Only check if the arrow has been active for a little while
             const arrowAge = Date.now() - arrow.createdAt;
-            if (arrowAge < 500) { // 500ms grace period for new arrows
+            if (arrowAge < 100) { // 100ms grace period for new arrows
                 return false;
             }
             
@@ -332,9 +346,9 @@ export function setupWeapons(scene, camera, collisionSystem) {
             for (const playerId in networkSystem.remotePlayers) {
                 const remotePlayer = networkSystem.remotePlayers[playerId];
                 
-                // Skip if this player just joined (within last 3 seconds)
+                // Skip if this player just joined (within last 1 second)
                 if (remotePlayer.userData.joinTime && 
-                    Date.now() - remotePlayer.userData.joinTime < 3000) {
+                    Date.now() - remotePlayer.userData.joinTime < 1000) {
                     continue;
                 }
                 
@@ -344,12 +358,18 @@ export function setupWeapons(scene, camera, collisionSystem) {
                 // Create a larger bounding box for the remote player
                 const remotePlayerBox = new THREE.Box3().setFromCenterAndSize(
                     remotePlayerPosition,
-                    new THREE.Vector3(2.0, 3.0, 2.0) // Large hit box to make hits easier
+                    new THREE.Vector3(3.0, 4.0, 3.0) // Much larger hit box to make hits easier
                 );
                 
                 // Check if arrow is inside remote player box
                 if (remotePlayerBox.containsPoint(arrowPosition)) {
                     // Remote player hit by arrow!
+                    console.log("HIT DETECTED! Remote player hit by arrow!", {
+                        arrowPos: arrowPosition,
+                        playerPos: remotePlayerPosition,
+                        playerId: playerId
+                    });
+                    
                     networkSystem.emitPlayerHit(playerId, 25);
                     
                     // Remove the arrow

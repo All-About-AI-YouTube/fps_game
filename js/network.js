@@ -141,18 +141,22 @@ export function setupNetworking(scene, camera, healthSystem) {
     
     // Listen for health updates from server
     socket.on('healthUpdate', (data) => {
-        console.log('Health update received:', data);
+        console.log('Health update received from server:', data);
         
         // If it's our health being updated
         if (data.id === socket.id && healthSystem) {
+            console.log("Updating our health to:", data.health);
             // Ensure our health is properly synced with server
             // This is important when we're hit by another player's arrow
             healthSystem.damagePlayer(0, data.health); // Pass the exact health value from server
         } 
         // If it's another player's health update
         else if (data.id !== socket.id && healthSystem) {
+            console.log("Updating opponent health to:", data.health);
             // Update the opponent's health display
             healthSystem.updateOpponentHealth(data.health);
+        } else {
+            console.warn("Health update received but no health system available");
         }
     });
     
@@ -262,10 +266,20 @@ export function setupNetworking(scene, camera, healthSystem) {
     // Function to emit a player hit to the server
     function emitPlayerHit(targetId, damage) {
         if (inGame) {
+            console.log("Emitting player hit event:", {
+                targetId: targetId,
+                damage: damage
+            });
+            
             socket.emit('playerHit', {
                 targetId,
                 damage
             });
+            
+            // Also log all remote players we know about
+            console.log("Known remote players:", Object.keys(remotePlayers));
+        } else {
+            console.warn("Cannot emit hit: not in game");
         }
     }
     
