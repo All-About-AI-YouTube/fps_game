@@ -18,15 +18,24 @@ export function createUI() {
     instructionsElement.style.zIndex = '10';
     instructionsElement.style.cursor = 'pointer';
     instructionsElement.innerHTML = `
-        <h1 style="font-family: Arial, sans-serif;">FPS Map Demo</h1>
+        <h1 style="font-family: Arial, sans-serif;">Multiplayer FPS Game</h1>
         <p style="font-family: Arial, sans-serif;">Click to play</p>
-        <p style="font-family: Arial, sans-serif;">Move: WASD</p>
-        <p style="font-family: Arial, sans-serif;">Look: Mouse</p>
-        <p style="font-family: Arial, sans-serif;">Jump: Space</p>
-        <p style="font-family: Arial, sans-serif;">Sprint: Shift</p>
-        <p style="font-family: Arial, sans-serif;">Shoot: Left Click</p>
-        <p style="font-family: Arial, sans-serif;">Debug: P</p>
-        <p style="font-family: Arial, sans-serif;">Exit: ESC</p>
+        <div style="margin: 20px 0; text-align: center; font-family: Arial, sans-serif;">
+            <h3>Controls:</h3>
+            <p>Move: WASD</p>
+            <p>Look: Mouse</p>
+            <p>Jump: Space</p>
+            <p>Sprint: Shift</p>
+            <p>Shoot: Left Click</p>
+            <p>Debug: P</p>
+            <p>Exit/Matchmaking: ESC</p>
+        </div>
+        <div style="margin: 20px 0; text-align: center; font-family: Arial, sans-serif;">
+            <h3>Multiplayer:</h3>
+            <p>Press ESC to access matchmaking</p>
+            <p>You'll be matched with other players automatically</p>
+            <p>Team A spawns on the west side, Team B on the east side</p>
+        </div>
     `;
     
     // Create a simple crosshair

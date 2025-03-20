@@ -46,7 +46,15 @@ export function setupEventListeners(controls, instructionsElement, camera, rende
     });
     
     controls.addEventListener('unlock', () => {
-        instructionsElement.style.display = 'flex';
+        // Check if we have the networking lobby system
+        const networkSystem = window.networkSystem;
+        if (networkSystem && networkSystem.lobby) {
+            // Show matchmaking lobby instead of instructions
+            networkSystem.lobby.show();
+        } else {
+            // Fall back to the instructions panel
+            instructionsElement.style.display = 'flex';
+        }
         console.log('Controls unlocked - player movement disabled');
     });
     

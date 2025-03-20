@@ -47,9 +47,12 @@ const {
 // Initialize player height-related variables
 const defaultPlayerY = playerHeight / 2;
 
-// Update camera starting position to Team A spawn
-// Team A spawn building is at (-45, 0, 0) so position the player a bit in front of it
-camera.position.set(-40, playerHeight / 2, 0);
+// Set initial spawn positions for each team
+const teamASpawn = new THREE.Vector3(-40, playerHeight / 2, 0);
+const teamBSpawn = new THREE.Vector3(40, playerHeight / 2, 0);
+
+// Default to team A spawn until we get team assignment from server
+camera.position.copy(teamASpawn);
 
 // Setup collision detection system
 const collisionSystem = setupCollision();
@@ -64,6 +67,9 @@ weaponSystem.initObjectBoundingBoxes(objects);
 
 // Setup networking system
 const networkSystem = setupNetworking(scene, camera, healthSystem);
+
+// Make it globally available for the controls.js to access
+window.networkSystem = networkSystem;
 
 // Set up multiplayer mode (bot is only used if not enough players)
 let useBot = true; // Will be set to false when another player joins
@@ -84,6 +90,18 @@ const playerTeamElement = document.getElementById('playerTeam');
 // Update player info when players join/leave
 networkSystem.socket.on('playerInitialized', (playerData) => {
     playerTeamElement.textContent = playerData.team;
+    
+    // Set player position based on team
+    if (playerData.team === 'A') {
+        camera.position.copy(teamASpawn);
+    } else {
+        camera.position.copy(teamBSpawn);
+    }
+    
+    // Lock controls after joining a match
+    setTimeout(() => {
+        controls.lock();
+    }, 500);
 });
 
 networkSystem.socket.on('currentPlayers', (players) => {
@@ -92,6 +110,16 @@ networkSystem.socket.on('currentPlayers', (players) => {
     
     // Disable bot if we have at least 2 players
     useBot = playerCount < 2;
+});
+
+// Handle game start from matchmaking
+networkSystem.socket.on('gameStart', () => {
+    console.log('Game started!');
+    
+    // Auto-lock controls when game starts
+    setTimeout(() => {
+        controls.lock();
+    }, 500);
 });
 
 // Verify the starting position is valid and not inside any objects

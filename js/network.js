@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { setupLobby } from './lobby.js';
 
 /**
  * Setup the networking system for multiplayer functionality
@@ -15,22 +16,39 @@ export function setupNetworking(scene, camera, healthSystem) {
     // For production, use the deployed URL or just '' to connect to the same host
     const socket = io('');
     
+    // Initialize the lobby/matchmaking system
+    const lobby = setupLobby(socket);
+    
     // Store references to other players in the game
     const remotePlayers = {};
     
     // Reference to the weapons system (will be set later)
     let weaponsSystem = null;
     
+    // Game state
+    let inGame = false;
+    
     // Listen for own player initialization
     socket.on('playerInitialized', (playerData) => {
         console.log('Player initialized:', playerData);
-        // You could add something like team info to the UI here
+        
+        // Update UI with player team
+        const playerTeamElement = document.getElementById('playerTeam');
+        if (playerTeamElement) {
+            playerTeamElement.textContent = playerData.team;
+        }
+        
+        // Mark as in game
+        inGame = true;
     });
     
     // Listen for new players joining
     socket.on('playerJoined', (playerData) => {
         console.log('New player joined:', playerData);
         createRemotePlayer(playerData);
+        
+        // Update player count in UI
+        updatePlayerCountUI();
     });
     
     // Initialize all current players when joining
@@ -43,6 +61,9 @@ export function setupNetworking(scene, camera, healthSystem) {
                 createRemotePlayer(player);
             }
         });
+        
+        // Update player count in UI
+        updatePlayerCountUI();
     });
     
     // Listen for player movements
@@ -98,8 +119,58 @@ export function setupNetworking(scene, camera, healthSystem) {
             
             // Remove from our local tracking
             delete remotePlayers[playerId];
+            
+            // Update player count in UI
+            updatePlayerCountUI();
         }
     });
+    
+    // Listen for game ended
+    socket.on('gameEnded', (data) => {
+        console.log('Game ended:', data);
+        
+        // Clear all remote players
+        Object.keys(remotePlayers).forEach(playerId => {
+            scene.remove(remotePlayers[playerId]);
+            delete remotePlayers[playerId];
+        });
+        
+        // Reset game state
+        inGame = false;
+    });
+    
+    // Listen for health updates from server
+    socket.on('healthUpdate', (data) => {
+        // If it's our health being updated
+        if (data.id === socket.id && healthSystem) {
+            healthSystem.setPlayerHealth(data.health);
+        }
+    });
+    
+    // Listen for player death
+    socket.on('playerDeath', (data) => {
+        console.log('Player death:', data);
+        
+        // If it's our death
+        if (data.id === socket.id && healthSystem) {
+            healthSystem.playerDeath();
+        }
+        
+        // If it's another player's death
+        if (remotePlayers[data.id]) {
+            // You could add death animation or effects here
+            // For now, just hide the player
+            remotePlayers[data.id].visible = false;
+        }
+    });
+    
+    // Helper function to update the player count UI
+    function updatePlayerCountUI() {
+        const playerCountElement = document.getElementById('playerCount');
+        if (playerCountElement) {
+            playerCountElement.textContent = Object.keys(remotePlayers).length + 1; // +1 for self
+        }
+    }
     
     // Create a visual representation of another player
     function createRemotePlayer(playerData) {
@@ -146,7 +217,7 @@ export function setupNetworking(scene, camera, healthSystem) {
         return playerGroup;
     }
     
-    // Join the game - call this immediately
+    // Join the game - this will be called after matchmaking is complete
     function joinGame() {
         socket.emit('playerJoin', {
             position: [camera.position.x, camera.position.y, camera.position.z],
@@ -154,8 +225,11 @@ export function setupNetworking(scene, camera, healthSystem) {
         });
     }
     
-    // Call joinGame to connect to the server immediately
-    joinGame();
+    // Listen for game start from matchmaking
+    socket.on('gameStart', () => {
+        // Join the game once we're matched and ready to start
+        joinGame();
+    });
     
     // Function to update server with player's position
     function updatePosition() {
@@ -170,12 +244,25 @@ export function setupNetworking(scene, camera, healthSystem) {
         weaponsSystem = weapons;
     }
     
+    // Function to emit a player hit to the server
+    function emitPlayerHit(targetId, damage) {
+        if (inGame) {
+            socket.emit('playerHit', {
+                targetId,
+                damage
+            });
+        }
+    }
+    
     // Return the networking system API
     return {
         socket,
         remotePlayers,
         update: updatePosition,
         getPlayerId: () => socket.id,
-        setWeaponsSystem
+        setWeaponsSystem,
+        emitPlayerHit,
+        isInGame: () => inGame,
+        lobby
     };
 }
