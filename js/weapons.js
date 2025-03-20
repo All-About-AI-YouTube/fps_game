@@ -312,6 +312,63 @@ export function setupWeapons(scene, camera, collisionSystem) {
             }
         }
         
+        // Special check for remote player hit by player arrow in multiplayer
+        if (!arrow.isEnemy && networkSystem && networkSystem.isInGame()) {
+            // Check against all remote players
+            for (const playerId in networkSystem.remotePlayers) {
+                const remotePlayer = networkSystem.remotePlayers[playerId];
+                
+                // Get remote player position
+                const remotePlayerPosition = remotePlayer.position.clone();
+                
+                // Create a larger bounding box for the remote player
+                const remotePlayerBox = new THREE.Box3().setFromCenterAndSize(
+                    remotePlayerPosition,
+                    new THREE.Vector3(2.0, 3.0, 2.0) // Large hit box to make hits easier
+                );
+                
+                // Check if arrow is inside remote player box
+                if (remotePlayerBox.containsPoint(arrowPosition)) {
+                    // Remote player hit by arrow!
+                    networkSystem.emitPlayerHit(playerId, 25);
+                    
+                    // Remove the arrow
+                    scene.remove(arrow.mesh);
+                    arrow.active = false;
+                    
+                    console.log("Remote player hit by arrow!");
+                    return true;
+                }
+                
+                // Add a simple distance-based check as well (easier to hit)
+                const distanceToPlayer = arrowPosition.distanceTo(remotePlayerPosition);
+                if (distanceToPlayer < 2.0) { // Simple proximity check (very forgiving)
+                    // Remote player hit with proximity check!
+                    networkSystem.emitPlayerHit(playerId, 25);
+                    
+                    // Remove the arrow
+                    scene.remove(arrow.mesh);
+                    arrow.active = false;
+                    
+                    console.log("Remote player hit with proximity check!");
+                    return true;
+                }
+                
+                // Also check if the arrow traveled close to the remote player
+                if (checkArrowProximity(lastPosition, arrowPosition, remotePlayerPosition, 2.5)) {
+                    // Remote player hit with proximity path check!
+                    networkSystem.emitPlayerHit(playerId, 25);
+                    
+                    // Remove the arrow
+                    scene.remove(arrow.mesh);
+                    arrow.active = false;
+                    
+                    console.log("Remote player hit with proximity path check!");
+                    return true;
+                }
+            }
+        }
+
         // Special check for bot hit by player arrow
         if (!arrow.isEnemy && botReference && healthSystem) {
             const botGroup = botReference.getGroup();

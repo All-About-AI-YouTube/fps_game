@@ -141,9 +141,17 @@ export function setupNetworking(scene, camera, healthSystem) {
     
     // Listen for health updates from server
     socket.on('healthUpdate', (data) => {
+        console.log('Health update received:', data);
+        
         // If it's our health being updated
         if (data.id === socket.id && healthSystem) {
-            healthSystem.setPlayerHealth(data.health);
+            // Our health is already updated through damagePlayer
+            // This is just a confirmation from the server
+        } 
+        // If it's another player's health update
+        else if (data.id !== socket.id && healthSystem) {
+            // Update the opponent's health display
+            healthSystem.updateOpponentHealth(data.health);
         }
     });
     
@@ -153,14 +161,20 @@ export function setupNetworking(scene, camera, healthSystem) {
         
         // If it's our death
         if (data.id === socket.id && healthSystem) {
-            healthSystem.playerDeath();
+            // Our health will be 0 and game over already shown
+            // Just ensure the player is marked as dead
+            healthSystem.updateOpponentHealth(0);
         }
         
         // If it's another player's death
         if (remotePlayers[data.id]) {
-            // You could add death animation or effects here
-            // For now, just hide the player
+            // Hide the player model
             remotePlayers[data.id].visible = false;
+            
+            // Update opponent health to 0 to trigger win condition
+            if (healthSystem) {
+                healthSystem.updateOpponentHealth(0);
+            }
         }
     });
     

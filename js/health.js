@@ -1,27 +1,23 @@
 import * as THREE from 'three';
 
 /**
- * Manages health and damage systems for player and bots
+ * Manages health and damage systems for players in multiplayer
  */
 export function setupHealthSystem(scene, camera) {
     // Health configuration
-    const MAX_PLAYER_HEALTH = 100;
-    const MAX_BOT_HEALTH = 100;
+    const MAX_HEALTH = 100;
     const ARROW_DAMAGE = 25; // Each arrow hit does 25 damage
     
     // Current health values
-    let playerHealth = MAX_PLAYER_HEALTH;
-    let botHealth = MAX_BOT_HEALTH;
+    let playerHealth = MAX_HEALTH;
+    let opponentHealth = MAX_HEALTH;
     
-    // Track if player or bot is dead
+    // Track if player is dead
     let playerDead = false;
-    let botDead = false;
     
     // Health bar configuration
     const healthBarWidth = 0.6; // Relative to screen width
     const healthBarHeight = 20; // Pixels
-    const botHealthDisplayTime = 3000; // How long to show bot health after hit (ms)
-    let lastBotHitTime = 0;
     
     // Create DOM elements for health bars
     const playerHealthBar = document.createElement('div');
@@ -61,45 +57,43 @@ export function setupHealthSystem(scene, camera) {
     playerHealthBar.appendChild(playerHealthLabel);
     document.body.appendChild(playerHealthBar);
     
-    // Bot health bar (always visible but shows health amount only when bot is hit)
-    const botHealthBar = document.createElement('div');
-    botHealthBar.style.position = 'absolute';
-    botHealthBar.style.top = '20px';
-    botHealthBar.style.left = `${(1 - healthBarWidth) / 2 * 100}%`;
-    botHealthBar.style.width = `${healthBarWidth * 100}%`;
-    botHealthBar.style.height = `${healthBarHeight}px`;
-    botHealthBar.style.backgroundColor = '#333';
-    botHealthBar.style.border = '3px solid #777'; // Thicker border
-    botHealthBar.style.borderRadius = '5px';
-    botHealthBar.style.overflow = 'hidden';
-    botHealthBar.style.zIndex = '100';
-    botHealthBar.style.boxShadow = '0 0 10px rgba(0,0,0,0.7)'; // Add shadow for better visibility
+    // Opponent health bar (always visible in multiplayer)
+    const opponentHealthBar = document.createElement('div');
+    opponentHealthBar.style.position = 'absolute';
+    opponentHealthBar.style.top = '20px';
+    opponentHealthBar.style.left = `${(1 - healthBarWidth) / 2 * 100}%`;
+    opponentHealthBar.style.width = `${healthBarWidth * 100}%`;
+    opponentHealthBar.style.height = `${healthBarHeight}px`;
+    opponentHealthBar.style.backgroundColor = '#333';
+    opponentHealthBar.style.border = '3px solid #777'; // Thicker border
+    opponentHealthBar.style.borderRadius = '5px';
+    opponentHealthBar.style.overflow = 'hidden';
+    opponentHealthBar.style.zIndex = '100';
+    opponentHealthBar.style.boxShadow = '0 0 10px rgba(0,0,0,0.7)'; // Add shadow for better visibility
     
-    // Create a label for bot health
-    const botHealthLabel = document.createElement('div');
-    botHealthLabel.style.position = 'absolute';
-    botHealthLabel.style.top = '50%';
-    botHealthLabel.style.right = '10px'; // Right aligned
-    botHealthLabel.style.transform = 'translateY(-50%)';
-    botHealthLabel.style.color = 'white';
-    botHealthLabel.style.fontFamily = 'Arial, sans-serif';
-    botHealthLabel.style.fontSize = '14px';
-    botHealthLabel.style.fontWeight = 'bold';
-    botHealthLabel.style.textShadow = '1px 1px 2px black';
-    botHealthLabel.style.zIndex = '101';
-    botHealthLabel.style.opacity = '0'; // Start hidden
-    botHealthLabel.style.transition = 'opacity 0.5s ease-out';
-    botHealthLabel.textContent = 'ENEMY: 100';
+    // Create a label for opponent health
+    const opponentHealthLabel = document.createElement('div');
+    opponentHealthLabel.style.position = 'absolute';
+    opponentHealthLabel.style.top = '50%';
+    opponentHealthLabel.style.right = '10px'; // Right aligned
+    opponentHealthLabel.style.transform = 'translateY(-50%)';
+    opponentHealthLabel.style.color = 'white';
+    opponentHealthLabel.style.fontFamily = 'Arial, sans-serif';
+    opponentHealthLabel.style.fontSize = '14px';
+    opponentHealthLabel.style.fontWeight = 'bold';
+    opponentHealthLabel.style.textShadow = '1px 1px 2px black';
+    opponentHealthLabel.style.zIndex = '101';
+    opponentHealthLabel.textContent = 'ENEMY: 100';
     
-    const botHealthFill = document.createElement('div');
-    botHealthFill.style.width = '100%';
-    botHealthFill.style.height = '100%';
-    botHealthFill.style.backgroundColor = '#f00'; // Red
-    botHealthFill.style.transition = 'width 0.2s ease-out'; // Faster transition
+    const opponentHealthFill = document.createElement('div');
+    opponentHealthFill.style.width = '100%';
+    opponentHealthFill.style.height = '100%';
+    opponentHealthFill.style.backgroundColor = '#f00'; // Red
+    opponentHealthFill.style.transition = 'width 0.2s ease-out'; // Faster transition
     
-    botHealthBar.appendChild(botHealthFill);
-    botHealthBar.appendChild(botHealthLabel);
-    document.body.appendChild(botHealthBar);
+    opponentHealthBar.appendChild(opponentHealthFill);
+    opponentHealthBar.appendChild(opponentHealthLabel);
+    document.body.appendChild(opponentHealthBar);
     
     // Add a game over screen
     const gameOverScreen = document.createElement('div');
@@ -143,11 +137,11 @@ export function setupHealthSystem(scene, camera) {
      */
     function updateHealthBars() {
         // Update player health bar
-        playerHealthFill.style.width = `${(playerHealth / MAX_PLAYER_HEALTH) * 100}%`;
+        playerHealthFill.style.width = `${(playerHealth / MAX_HEALTH) * 100}%`;
         playerHealthLabel.textContent = `HEALTH: ${playerHealth}`;
         
         // Health color changes with amount (green -> yellow -> red)
-        const playerHealthPercent = playerHealth / MAX_PLAYER_HEALTH;
+        const playerHealthPercent = playerHealth / MAX_HEALTH;
         if (playerHealthPercent > 0.6) {
             playerHealthFill.style.backgroundColor = '#0f0'; // Green
         } else if (playerHealthPercent > 0.3) {
@@ -160,20 +154,9 @@ export function setupHealthSystem(scene, camera) {
             playerHealthFill.style.animation = 'pulse 1s infinite';
         }
         
-        // Update bot health bar
-        botHealthFill.style.width = `${(botHealth / MAX_BOT_HEALTH) * 100}%`;
-        botHealthLabel.textContent = `ENEMY: ${botHealth}`;
-        
-        // Show bot health bar and label if hit recently
-        const now = Date.now();
-        if (now - lastBotHitTime < botHealthDisplayTime) {
-            botHealthBar.style.opacity = '1';
-            botHealthLabel.style.opacity = '1';
-        } else {
-            // Keep the bar visible but make label transparent when not recently hit
-            botHealthBar.style.opacity = '0.7';
-            botHealthLabel.style.opacity = '0';
-        }
+        // Update opponent health bar
+        opponentHealthFill.style.width = `${(opponentHealth / MAX_HEALTH) * 100}%`;
+        opponentHealthLabel.textContent = `ENEMY: ${opponentHealth}`;
     }
     
     /**
@@ -207,33 +190,14 @@ export function setupHealthSystem(scene, camera) {
     }
     
     /**
-     * Damage the bot
+     * Update opponent health
      */
-    function damageBot(amount, botObject) {
-        if (botDead) return;
+    function updateOpponentHealth(health) {
+        opponentHealth = health;
         
-        botHealth -= amount;
-        lastBotHitTime = Date.now();
-        
-        // Play hit marker sound
-        try {
-            const hitSound = new Audio('/sounds/arrow.mp3'); // Use arrow sound as hit sound
-            hitSound.volume = 0.3;
-            hitSound.play();
-        } catch (error) {
-            console.warn('Hit sound not available', error);
-        }
-        
-        // Check for bot death
-        if (botHealth <= 0) {
-            botHealth = 0;
-            botDead = true;
-            
-            // Hide bot object if provided
-            if (botObject) {
-                botObject.visible = false;
-            }
-            
+        // If opponent is dead, show win screen
+        if (opponentHealth <= 0 && !playerDead) {
+            opponentHealth = 0;
             gameOver(true); // Player won
         }
         
@@ -356,11 +320,10 @@ export function setupHealthSystem(scene, camera) {
     
     return {
         damagePlayer,
-        damageBot,
+        updateOpponentHealth,
         isPlayerDead: () => playerDead,
-        isBotDead: () => botDead,
         getPlayerHealth: () => playerHealth,
-        getBotHealth: () => botHealth,
+        getOpponentHealth: () => opponentHealth,
         update: updateHealthBars
     };
 }
