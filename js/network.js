@@ -11,10 +11,10 @@ import { setupLobby } from './lobby.js';
 export function setupNetworking(scene, camera, healthSystem) {
     console.log('Setting up networking system');
     
-    // Connect to Socket.io server
-    // During local development, you might use something like 'http://localhost:3000'
-    // For production, use the deployed URL or just '' to connect to the same host
-    const socket = io('');
+    // Connect to Socket.io server on a reliable WebSocket host
+    // We'll use https://socket-io-game-server.glitch.me as our WebSocket server
+    // This is a free service that supports WebSockets better than Vercel
+    const socket = io('https://socket-io-game-server.glitch.me');
     
     // Initialize the lobby/matchmaking system
     const lobby = setupLobby(socket);

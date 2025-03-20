@@ -1,0 +1,17 @@
+{
+  "name": "fps-game-server",
+  "version": "1.0.0",
+  "description": "WebSocket server for FPS multiplayer game",
+  "main": "server-glitch.js",
+  "scripts": {
+    "start": "node server-glitch.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": "16.x"
+  }
+}
