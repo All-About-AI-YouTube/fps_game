@@ -145,8 +145,9 @@ export function setupNetworking(scene, camera, healthSystem) {
         
         // If it's our health being updated
         if (data.id === socket.id && healthSystem) {
-            // Our health is already updated through damagePlayer
-            // This is just a confirmation from the server
+            // Ensure our health is properly synced with server
+            // This is important when we're hit by another player's arrow
+            healthSystem.damagePlayer(0, data.health); // Pass the exact health value from server
         } 
         // If it's another player's health update
         else if (data.id !== socket.id && healthSystem) {
@@ -161,9 +162,8 @@ export function setupNetworking(scene, camera, healthSystem) {
         
         // If it's our death
         if (data.id === socket.id && healthSystem) {
-            // Our health will be 0 and game over already shown
-            // Just ensure the player is marked as dead
-            healthSystem.updateOpponentHealth(0);
+            // Set our health to 0 and trigger game over
+            healthSystem.damagePlayer(0, 0); // Force health to 0
         }
         
         // If it's another player's death

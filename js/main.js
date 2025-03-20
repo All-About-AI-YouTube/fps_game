@@ -106,6 +106,12 @@ networkSystem.socket.on('playerInitialized', (playerData) => {
     useBot = false;
     botSystem.getGroup().visible = false;
     
+    // Reset player health to 100 for a fresh start
+    if (healthSystem) {
+        healthSystem.damagePlayer(0, 100); // Set exact health to 100 
+        healthSystem.updateOpponentHealth(100); // Also set opponent health to 100
+    }
+    
     // Lock controls after joining a match
     setTimeout(() => {
         controls.lock();

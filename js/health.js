@@ -161,22 +161,33 @@ export function setupHealthSystem(scene, camera) {
     
     /**
      * Damage the player
+     * @param {number} amount - The amount to subtract from health (or 0 for exact health set)
+     * @param {number} exactHealth - Optional exact health value to set (from server)
      */
-    function damagePlayer(amount) {
+    function damagePlayer(amount, exactHealth = null) {
         if (playerDead) return;
         
-        playerHealth -= amount;
-        
-        // Apply screen damage effect
-        applyDamageEffect();
-        
-        // Play damage sound
-        try {
-            const damageSound = new Audio('/sounds/arrow.mp3'); // Use arrow sound as damage sound
-            damageSound.volume = 0.3;
-            damageSound.play();
-        } catch (error) {
-            console.warn('Damage sound not available', error);
+        // If exactHealth is provided, set health to that value (from server sync)
+        if (exactHealth !== null) {
+            playerHealth = exactHealth;
+        } else {
+            // Otherwise subtract damage amount
+            playerHealth -= amount;
+            
+            // Only apply damage effects when actually taking damage
+            if (amount > 0) {
+                // Apply screen damage effect
+                applyDamageEffect();
+                
+                // Play damage sound
+                try {
+                    const damageSound = new Audio('/sounds/arrow.mp3'); // Use arrow sound as damage sound
+                    damageSound.volume = 0.3;
+                    damageSound.play();
+                } catch (error) {
+                    console.warn('Damage sound not available', error);
+                }
+            }
         }
         
         // Check for death
