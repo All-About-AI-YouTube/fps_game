@@ -14,7 +14,7 @@ export function setupNetworking(scene, camera, healthSystem) {
     // Connect to Socket.io server on a reliable WebSocket host
     // We'll use https://socket-io-game-server.glitch.me as our WebSocket server
     // This is a free service that supports WebSockets better than Vercel
-    const socket = io('https://socket-io-game-server.glitch.me');
+    const socket = io('https://candle-harmless-baboon.glitch.me');
     
     // Initialize the lobby/matchmaking system
     const lobby = setupLobby(socket);
