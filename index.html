@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FPS Game - CS-Style Map</title>
+    <title>Multiplayer FPS Game</title>
     <style>
         body {
             margin: 0;
@@ -43,16 +43,35 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        #playerInfo {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
     </style>
 </head>
 <body>
     <div class="loading" id="loading">
         <div class="loading-content">
-            <h1>Loading Game</h1>
+            <h1>Loading Multiplayer Game</h1>
             <div class="loading-spinner"></div>
-            <p>Preparing your Counter-Strike inspired map...</p>
+            <p>Preparing game and connecting to server...</p>
         </div>
     </div>
+    
+    <div id="playerInfo">
+        <div>Players Online: <span id="playerCount">1</span></div>
+        <div>Team: <span id="playerTeam">A</span></div>
+    </div>
+    
+    <!-- Socket.io Client Library -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     
     <script type="importmap">
         {

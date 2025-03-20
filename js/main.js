@@ -7,6 +7,7 @@ import { createUI } from './ui.js';
 import { setupWeapons } from './weapons.js';
 import { setupBot } from './bot.js';
 import { setupHealthSystem } from './health.js';
+import { setupNetworking } from './network.js';
 
 // Initialize the renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -61,12 +62,37 @@ const healthSystem = setupHealthSystem(scene, camera);
 const weaponSystem = setupWeapons(scene, camera, collisionSystem);
 weaponSystem.initObjectBoundingBoxes(objects);
 
-// Setup AI bot for Team B
+// Setup networking system
+const networkSystem = setupNetworking(scene, camera, healthSystem);
+
+// Set up multiplayer mode (bot is only used if not enough players)
+let useBot = true; // Will be set to false when another player joins
+
+// Create the bot but don't activate it initially in multiplayer
 const botSystem = setupBot(scene, objects, camera, collisionSystem, weaponSystem, healthSystem);
 
 // Connect systems together
-weaponSystem.setHealthSystem(healthSystem); 
+weaponSystem.setHealthSystem(healthSystem);
 weaponSystem.setBotReference(botSystem);
+weaponSystem.setNetworkSystem(networkSystem);
+networkSystem.setWeaponsSystem(weaponSystem);
+
+// Setup player info UI
+const playerCountElement = document.getElementById('playerCount');
+const playerTeamElement = document.getElementById('playerTeam');
+
+// Update player info when players join/leave
+networkSystem.socket.on('playerInitialized', (playerData) => {
+    playerTeamElement.textContent = playerData.team;
+});
+
+networkSystem.socket.on('currentPlayers', (players) => {
+    const playerCount = Object.keys(players).length;
+    playerCountElement.textContent = playerCount;
+    
+    // Disable bot if we have at least 2 players
+    useBot = playerCount < 2;
+});
 
 // Verify the starting position is valid and not inside any objects
 (function verifyStartPosition() {
@@ -300,8 +326,11 @@ function animate() {
         // Update arrows
         weaponSystem.updateArrows(objects);
         
-        // Update AI bot (only if player is alive)
-        if (!healthSystem.isPlayerDead()) {
+        // Update the network system
+        networkSystem.update();
+        
+        // Update AI bot only if not enough players and player is alive
+        if (useBot && !healthSystem.isPlayerDead()) {
             botSystem.update();
         }
         

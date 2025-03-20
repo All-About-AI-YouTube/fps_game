@@ -64,7 +64,7 @@ export function setupWeapons(scene, camera, collisionSystem) {
     }
     
     // Function to fire an arrow
-    function fireArrow(customStartPosition = null, customDirection = null, isEnemy = false) {
+    function fireArrow(customStartPosition = null, customDirection = null, isEnemy = false, fromNetwork = false) {
         // Create arrow and add to scene
         const arrow = createArrow(isEnemy);
         scene.add(arrow);
@@ -72,7 +72,7 @@ export function setupWeapons(scene, camera, collisionSystem) {
         let startPosition, arrowDirection;
         
         if (customStartPosition && customDirection) {
-            // Use custom position and direction (for enemy)
+            // Use custom position and direction (for enemy or network)
             startPosition = customStartPosition.clone();
             arrowDirection = customDirection.clone().normalize();
         } else {
@@ -85,6 +85,15 @@ export function setupWeapons(scene, camera, collisionSystem) {
             startPosition.copy(camera.position);
             startPosition.add(arrowDirection.multiplyScalar(0.8)); // Moved further forward to avoid camera intersections
             startPosition.y -= 0.2; // Slightly below eye level
+            
+            // Notify other players about the shot (if not already from the network)
+            if (networkSystem && !fromNetwork) {
+                networkSystem.socket.emit('playerShoot', {
+                    position: [startPosition.x, startPosition.y, startPosition.z],
+                    direction: [arrowDirection.x, arrowDirection.y, arrowDirection.z],
+                    velocity: arrowSpeed
+                });
+            }
         }
         
         arrow.position.copy(startPosition);
@@ -156,6 +165,7 @@ export function setupWeapons(scene, camera, collisionSystem) {
     // References to other systems
     let healthSystem = null;
     let botReference = null;
+    let networkSystem = null;
     
     /**
      * Set the health system for damage calculation
@@ -169,6 +179,13 @@ export function setupWeapons(scene, camera, collisionSystem) {
      */
     function setBotReference(bot) {
         botReference = bot;
+    }
+    
+    /**
+     * Set the network system for multiplayer
+     */
+    function setNetworkSystem(network) {
+        networkSystem = network;
     }
     
     // Check collision using the improved physics system's raycaster for precise detection
@@ -558,6 +575,7 @@ export function setupWeapons(scene, camera, collisionSystem) {
         initObjectBoundingBoxes,
         fireArrow,
         setHealthSystem,
-        setBotReference
+        setBotReference,
+        setNetworkSystem
     };
 }
