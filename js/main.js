@@ -74,8 +74,12 @@ window.networkSystem = networkSystem;
 // Set up multiplayer mode (bot is only used if not enough players)
 let useBot = true; // Will be set to false when another player joins
 
-// Create the bot but don't activate it initially in multiplayer
+// Create the bot, but only use it for single-player mode
+// In multiplayer, we won't spawn or update the bot at all
 const botSystem = setupBot(scene, objects, camera, collisionSystem, weaponSystem, healthSystem);
+
+// Hide the bot initially - we'll only show it in single-player mode
+botSystem.getGroup().visible = false;
 
 // Connect systems together
 weaponSystem.setHealthSystem(healthSystem);
@@ -98,6 +102,10 @@ networkSystem.socket.on('playerInitialized', (playerData) => {
         camera.position.copy(teamBSpawn);
     }
     
+    // We're in multiplayer mode, so disable and hide the bot
+    useBot = false;
+    botSystem.getGroup().visible = false;
+    
     // Lock controls after joining a match
     setTimeout(() => {
         controls.lock();
@@ -108,8 +116,9 @@ networkSystem.socket.on('currentPlayers', (players) => {
     const playerCount = Object.keys(players).length;
     playerCountElement.textContent = playerCount;
     
-    // Disable bot if we have at least 2 players
-    useBot = playerCount < 2;
+    // Disable bot completely in multiplayer mode
+    useBot = false;
+    botSystem.getGroup().visible = false;
 });
 
 // Handle game start from matchmaking
@@ -357,9 +366,15 @@ function animate() {
         // Update the network system
         networkSystem.update();
         
-        // Update AI bot only if not enough players and player is alive
+        // Update AI bot only in single-player mode when useBot is true
+        // In multiplayer mode, useBot is always false
         if (useBot && !healthSystem.isPlayerDead()) {
+            // Make sure the bot is visible in single-player mode
+            botSystem.getGroup().visible = true;
             botSystem.update();
+        } else {
+            // Always keep the bot hidden in multiplayer mode
+            botSystem.getGroup().visible = false;
         }
         
         // Update health system
