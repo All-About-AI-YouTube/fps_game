@@ -223,6 +223,7 @@ export function setupNetworking(scene, camera, healthSystem) {
         playerGroup.userData.id = playerData.id;
         playerGroup.userData.team = playerData.team;
         playerGroup.userData.health = playerData.health;
+        playerGroup.userData.joinTime = Date.now(); // Track when player joined
         
         // Add to scene and store reference
         scene.add(playerGroup);

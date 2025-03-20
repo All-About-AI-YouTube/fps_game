@@ -131,6 +131,12 @@ networkSystem.socket.on('currentPlayers', (players) => {
 networkSystem.socket.on('gameStart', () => {
     console.log('Game started!');
     
+    // Reset player and opponent health to 100 at game start
+    if (healthSystem) {
+        healthSystem.damagePlayer(0, 100); // Set player health to 100
+        healthSystem.updateOpponentHealth(100); // Set opponent health to 100
+    }
+    
     // Auto-lock controls when game starts
     setTimeout(() => {
         controls.lock();

@@ -196,6 +196,13 @@ export function setupWeapons(scene, camera, collisionSystem) {
         
         // Special check for player hit by enemy arrow
         if (arrow.isEnemy && healthSystem) {
+            // Add a small delay to prevent hit detection right after joining
+            // Only check if the arrow has been active for a little while
+            const arrowAge = Date.now() - arrow.createdAt;
+            if (arrowAge < 500) { // 500ms grace period for new arrows
+                return false;
+            }
+            
             // Get player camera position
             const playerPosition = camera.position.clone();
             
@@ -314,9 +321,22 @@ export function setupWeapons(scene, camera, collisionSystem) {
         
         // Special check for remote player hit by player arrow in multiplayer
         if (!arrow.isEnemy && networkSystem && networkSystem.isInGame()) {
+            // Add a small delay to prevent hit detection right after joining
+            // Only check if the arrow has been active for a little while
+            const arrowAge = Date.now() - arrow.createdAt;
+            if (arrowAge < 500) { // 500ms grace period for new arrows
+                return false;
+            }
+            
             // Check against all remote players
             for (const playerId in networkSystem.remotePlayers) {
                 const remotePlayer = networkSystem.remotePlayers[playerId];
+                
+                // Skip if this player just joined (within last 3 seconds)
+                if (remotePlayer.userData.joinTime && 
+                    Date.now() - remotePlayer.userData.joinTime < 3000) {
+                    continue;
+                }
                 
                 // Get remote player position
                 const remotePlayerPosition = remotePlayer.position.clone();
